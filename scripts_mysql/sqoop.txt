@@ -1,0 +1,74 @@
+start-dfs.sh
+start-yarn.sh
+jps
+
+# On lance le metastore en arrière-plan (hive communique avec PostgreSQL sur db-server)
+nohup hive --service metastore > /tmp/hive-metastore.log 2>&1 &
+
+# Vérifier si la connnexion s'est bien établie (on entre dans le cli de postgres sur metastore_db database)
+psql -h 172.31.24.228 -U hiveuser -d metastore_db
+
+# utiliser sparksql sur les workers et non pas le master
+spark-sql --master yarn \
+  --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" \
+  --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
+
+
+
+
+spark-sql --master yarn \
+  --deploy-mode client \
+  --packages io.delta:delta-spark_2.12:3.1.0 \
+  --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" \
+  --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog" \
+  --conf "spark.delta.logStore.class=org.apache.spark.sql.delta.storage.HDFSLogStore" \
+  --executor-memory 2G \
+  --total-executor-cores 2
+
+
+
+
+
+
+
+
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Sales].[SalesOrderHeader] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Sales_SalesOrderHeader" \
+  --num-mappers 1 \
+  --fields-terminated-by ',' \
+  --delete-target-dir
+
+
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Sales].[SalesOrderDetail] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Sales_SalesOrderDetail" \
+  --num-mappers 1 \
+  --fields-terminated-by ',' \
+  --delete-target-dir
+
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Sales].[Currency] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Currency" \
+  --num-mappers 1 \
+  --fields-terminated-by ',' \
+  --delete-target-dir
+
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Person].[CountryRegion] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_CountryRegion" \
+  --num-mappers 1 \
+  --fields-terminated-by ',' \
+  --delete-target-dir

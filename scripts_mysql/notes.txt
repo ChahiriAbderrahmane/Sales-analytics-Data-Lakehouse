@@ -1,0 +1,11 @@
+sudo mysql --local-infile=1
+
+
+-- Désactiver les contraintes
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Vider la table
+TRUNCATE TABLE SalesTerritory;
+
+-- Réactiver les contraintes
+SET FOREIGN_KEY_CHECKS = 1;
