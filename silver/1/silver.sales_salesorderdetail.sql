@@ -1,8 +1,6 @@
--- ███████████████████████████████████████████████████████████████████████████
 -- 1. sales_salesorderdetail — INSERT UNIQUEMENT (pas de SCD)
 --    Clé : SalesOrderID + SalesOrderDetailID
 --    Logique : une ligne achetée ne change jamais, on insère et c'est tout
--- ███████████████████████████████████████████████████████████████████████████
 
 CREATE TABLE IF NOT EXISTS silver.sales_salesorderdetail (
     sales_order_id              INT,

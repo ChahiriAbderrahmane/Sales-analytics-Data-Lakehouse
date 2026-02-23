@@ -1,8 +1,7 @@
--- ███████████████████████████████████████████████████████████████████████████
 -- 4. sales_currency — INSERT UNIQUEMENT
 --    Clé : CurrencyCode (STRING)
 --    Logique : une devise ne change pas, on insère les nouveaux codes seulement
--- ███████████████████████████████████████████████████████████████████████████
+
 
 CREATE TABLE IF NOT EXISTS silver.sales_currency (
     currency_code           STRING,

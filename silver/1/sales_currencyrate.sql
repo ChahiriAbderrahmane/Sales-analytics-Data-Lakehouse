@@ -1,8 +1,6 @@
--- ███████████████████████████████████████████████████████████████████████████
 -- 5. sales_currencyrate — INSERT UNIQUEMENT (transactionnel)
 --    Clé : CurrencyRateID
 --    Logique : un taux de change est un snapshot quotidien, il ne change pas
--- ███████████████████████████████████████████████████████████████████████████
 
 CREATE TABLE IF NOT EXISTS silver.sales_currencyrate (
     currency_rate_id        INT,

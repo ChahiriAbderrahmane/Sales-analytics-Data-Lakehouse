@@ -1,3 +1,10 @@
+yarn-site.xml  → /usr/local/hadoop/etc/hadoop/yarn-site.xml  ✅
+workers        → /usr/local/hadoop/etc/hadoop/workers         ✅
+spark-defaults → n'existe pas encore → on va le créer         ✅
+HADOOP_HOME    → /usr/local/hadoop
+SPARK_HOME     → /usr/local/spark
+
+
 start-dfs.sh
 start-yarn.sh
 jps
@@ -15,7 +22,7 @@ spark-sql --master yarn \
 
 
 
-
+# pas besoin de cette commande car les config sont déjà désormais dans ""/usr/local/spark/conf/spark-defaults.conf""
 spark-sql --master yarn \
   --deploy-mode client \
   --packages io.delta:delta-spark_2.12:3.1.0 \
@@ -23,11 +30,18 @@ spark-sql --master yarn \
   --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog" \
   --conf "spark.delta.logStore.class=org.apache.spark.sql.delta.storage.HDFSLogStore" \
   --executor-memory 2G \
-  --total-executor-cores 2
+  --total-executor-cores 2   ### pour gérer les ressources par sessions et les distribuer wisely entre les users, pour mon ça restera
+                                    pour delta lake, yarn ... et les autres processus qui tournent en parallèle
 
 
 
-
+spark-sql --master yarn \
+  --deploy-mode client \
+  --packages io.delta:delta-spark_2.12:3.1.0 \
+  --driver-memory 512m \
+  --executor-memory 2g \
+  --executor-cores 1 \
+  --num-executors 2
 
 
 

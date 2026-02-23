@@ -1,9 +1,7 @@
--- ███████████████████████████████████████████████████████████████████████████
 -- 1. sales_salesorderheadersalesreason — INSERT UNIQUEMENT
 --    Clé : SalesOrderID + SalesReasonID (clé composite)
 --    Logique : table de liaison transactionnelle, une association créée
 --              ne change jamais, on insère les nouvelles uniquement
--- ███████████████████████████████████████████████████████████████████████████
 
 CREATE TABLE IF NOT EXISTS silver.sales_salesorderheadersalesreason (
     sales_order_id          INT,
