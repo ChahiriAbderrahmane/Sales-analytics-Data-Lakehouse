@@ -19,158 +19,12 @@ SET spark.databricks.delta.autoCompact.enabled = true;
 
 
 
--- ███████████████████████████████████████████████████████████████████████████
--- SECTION 1 — dim_date
--- Générée synthétiquement, jamais depuis Silver
--- Pas de SCD (les dates ne changent pas), Full Refresh annuel
--- ███████████████████████████████████████████████████████████████████████████
-
-CREATE TABLE IF NOT EXISTS gold.dim_date (
-    date_sk         INT          NOT NULL,   -- yyyyMMdd, ex: 20240315
-    date            DATE         NOT NULL,
-    year            INT,
-    quarter         INT,
-    quarter_name    STRING,
-    month           INT,
-    month_name      STRING,
-    day             INT,
-    day_of_week     INT,
-    day_name        STRING,
-    week_of_year    INT,
-    is_weekday      BOOLEAN,
-    is_weekend      BOOLEAN,
-    is_last_day_of_month BOOLEAN,
-    -- Colonnes fiscales (exercice commençant en juillet - Adventure Works)
-    fiscal_year     INT,
-    fiscal_quarter  INT,
-    fiscal_month    INT
-)
-USING DELTA
-LOCATION '/user/hadoop/sales_data_mart/gold/dim_date'
-TBLPROPERTIES (
-    'delta.minReaderVersion'           = '1',
-    'delta.minWriterVersion'           = '2',
-    'delta.autoOptimize.optimizeWrite' = 'true',
-    'delta.autoOptimize.autoCompact'   = 'true',
-    'delta.columnMapping.mode'         = 'name'
-);
-
--- Full Refresh (table petite, ~7300 lignes pour 20 ans, pas de risque)
-CREATE OR REPLACE TABLE gold.dim_date
-USING DELTA
-LOCATION '/user/hadoop/sales_data_mart/gold/dim_date'
-AS
-SELECT
-    CAST(date_format(d.date, 'yyyyMMdd') AS INT)        AS date_sk,
-    d.date,
-    YEAR(d.date)                                         AS year,
-    QUARTER(d.date)                                      AS quarter,
-    CONCAT('Q', QUARTER(d.date))                         AS quarter_name,
-    MONTH(d.date)                                        AS month,
-    date_format(d.date, 'MMMM')                         AS month_name,
-    DAY(d.date)                                          AS day,
-    DAYOFWEEK(d.date)                                    AS day_of_week,
-    date_format(d.date, 'EEEE')                         AS day_name,
-    WEEKOFYEAR(d.date)                                   AS week_of_year,
-    CASE WHEN DAYOFWEEK(d.date) BETWEEN 2 AND 6
-         THEN TRUE ELSE FALSE END                        AS is_weekday,
-    CASE WHEN DAYOFWEEK(d.date) IN (1, 7)
-         THEN TRUE ELSE FALSE END                        AS is_weekend,
-    CASE WHEN d.date = LAST_DAY(d.date)
-         THEN TRUE ELSE FALSE END                        AS is_last_day_of_month,
-    -- Fiscal year : juillet = début (Adventure Works convention)
-    CASE WHEN MONTH(d.date) >= 7
-         THEN YEAR(d.date) + 1
-         ELSE YEAR(d.date) END                           AS fiscal_year,
-    CASE WHEN MONTH(d.date) IN (7,8,9)   THEN 1
-         WHEN MONTH(d.date) IN (10,11,12) THEN 2
-         WHEN MONTH(d.date) IN (1,2,3)   THEN 3
-         ELSE 4 END                                      AS fiscal_quarter,
-    CASE WHEN MONTH(d.date) >= 7
-         THEN MONTH(d.date) - 6
-         ELSE MONTH(d.date) + 6 END                     AS fiscal_month
-FROM (
-    SELECT EXPLODE(
-        SEQUENCE(TO_DATE('2010-01-01'), TO_DATE('2030-12-31'), INTERVAL 1 DAY)
-    ) AS date
-) d;
 
 
 
 
--- ███████████████████████████████████████████████████████████████████████████
--- SECTION 2 — dim_product
--- SCD Type 2 conservé depuis Silver
--- Dénormalisé : subcategory + category intégrés
--- Stratégie    : Full Refresh (volume dim produit << volume fact)
--- ███████████████████████████████████████████████████████████████████████████
 
-CREATE OR REPLACE TABLE gold.dim_product
-USING DELTA
-LOCATION '/user/hadoop/sales_data_mart/gold/dim_product'
-TBLPROPERTIES (
-    'delta.minReaderVersion'           = '1',
-    'delta.minWriterVersion'           = '2',
-    'delta.autoOptimize.optimizeWrite' = 'true',
-    'delta.autoOptimize.autoCompact'   = 'true',
-    'delta.columnMapping.mode'         = 'name'
-)
-AS
-SELECT
-    -- Surrogate key : ROW_NUMBER garantit unicité même avec l'historique SCD
-    ROW_NUMBER() OVER (
-        ORDER BY p.product_id, p.valid_from
-    )                                   AS product_sk,
 
-    -- Clé naturelle (gardée pour debugging et jointures ad hoc)
-    p.product_id,
-
-    -- Attributs produit
-    p.name,
-    p.product_number,
-    p.color,
-    p.size,
-    p.weight,
-    p.size_unit_measure_code,
-    p.weight_unit_measure_code,
-    p.standard_cost,
-    p.list_price,
-    p.product_line,
-    p.class,
-    p.style,
-    p.days_to_manufacture,
-    p.make_flag,
-    p.finished_goods_flag,
-    p.sell_start_date,
-    p.sell_end_date,
-    p.discontinued_date,
-
-    -- Dénormalisation subcategory (Kimball : pas de snowflake en Gold)
-    psc.name                            AS subcategory_name,
-
-    -- Dénormalisation category
-    pc.name                             AS category_name,
-
-    -- SCD Type 2 tracé depuis Silver
-    p.modified_date                     AS valid_from,
-    p.end_date                          AS valid_to,
-    p.is_current
-
-FROM silver.production_product p
-
--- LEFT JOIN pour ne pas perdre les produits sans sous-catégorie
-LEFT JOIN silver.production_productsubcategory psc
-    ON p.product_subcategory_id = psc.product_subcategory_id
-    -- On joint la version Silver active de la sous-catégorie
-    -- (la version historique du produit est liée à la version courante de la hiérarchie)
-    AND psc.is_current = TRUE
-
-LEFT JOIN silver.production_productcategory pc
-    ON psc.product_category_id = pc.product_category_id
-    AND pc.is_current = TRUE;
-
--- Z-Order sur les colonnes les plus filtrées en analytique
-OPTIMIZE gold.dim_product ZORDER BY (product_id, is_current);
 
 
 
@@ -182,7 +36,42 @@ OPTIMIZE gold.dim_product ZORDER BY (product_id, is_current);
 -- Stratégie    : Full Refresh (dim, pas la fact)
 -- ███████████████████████████████████████████████████████████████████████████
 
-CREATE OR REPLACE TABLE gold.dim_customer
+-- 1. Création initiale de la table (à exécuter UNE SEULE FOIS)
+CREATE TABLE IF NOT EXISTS gold.dim_customer (
+    customer_sk                 BIGINT          NOT NULL,   -- surrogate key (BIGINT pour scale > 2^31)
+    customer_id                 INT,
+    account_number              STRING,
+    store_id                    INT,
+
+    -- Identité
+    first_name                  STRING,
+    middle_name                 STRING,
+    last_name                   STRING,
+    full_name                   STRING,
+    person_type                 STRING,
+    email_promotion             INT,
+
+    -- Adresse principale (bill_to ou ship_to la plus récente)
+    address_line1               STRING,
+    address_line2               STRING,
+    city                        STRING,
+    postal_code                 STRING,
+
+    -- Géographie dénormalisée
+    state_province_code         STRING,
+    state_province_name         STRING,
+    country_region_code         STRING,
+    country_name                STRING,
+
+    -- SCD Type 2
+    valid_from                  TIMESTAMP       NOT NULL,
+    valid_to                    TIMESTAMP,
+    is_current                  BOOLEAN         NOT NULL,
+
+    -- Métadonnées big data
+    ingestion_timestamp         TIMESTAMP,
+    source_system               STRING          -- ex: 'online', 'erp', 'crm'
+)
 USING DELTA
 LOCATION '/user/hadoop/sales_data_mart/gold/dim_customer'
 TBLPROPERTIES (
@@ -190,67 +79,121 @@ TBLPROPERTIES (
     'delta.minWriterVersion'           = '2',
     'delta.autoOptimize.optimizeWrite' = 'true',
     'delta.autoOptimize.autoCompact'   = 'true',
-    'delta.columnMapping.mode'         = 'name'
-)
-AS
-SELECT
-    ROW_NUMBER() OVER (
-        ORDER BY c.customer_id, c.valid_from
-    )                                   AS customer_sk,
+    'delta.columnMapping.mode'         = 'name',
+    'delta.enableChangeDataFeed'       = 'true'   -- utile pour downstream
+);
 
-    c.customer_id,
-    c.account_number,
-    c.store_id,
+-- 2. MERGE incrémental (à exécuter à chaque batch / refresh)
+MERGE INTO gold.dim_customer AS target
+USING (
+    SELECT
+        ROW_NUMBER() OVER (
+            ORDER BY c.customer_id, c.modified_date
+        ) + COALESCE((SELECT MAX(customer_sk) FROM gold.dim_customer), 0) AS customer_sk,
 
-    -- Identité (person_person)
-    p.first_name,
-    p.middle_name,
-    p.last_name,
-    CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name)
-                                        AS full_name,
-    p.person_type,
-    p.email_promotion,
+        c.customer_id,
+        c.account_number,
+        c.store_id,
 
-    -- Adresse (person_address)
-    a.address_line1,
-    a.address_line2,
-    a.city,
-    a.postal_code,
+        p.first_name,
+        p.middle_name,
+        p.last_name,
+        CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name) AS full_name,
+        p.person_type,
+        p.email_promotion,
 
-    -- Géographie dénormalisée (stateprovince + countryregion)
-    sp.state_province_code,
-    sp.name                             AS state_province_name,
-    cr.country_region_code,
-    cr.name                             AS country_name,
+        a.address_line1,
+        a.address_line2,
+        a.city,
+        a.postal_code,
 
-    -- SCD Type 2
-    c.modified_date                     AS valid_from,
-    c.end_date                          AS valid_to,
-    c.is_current
+        sp.state_province_code,
+        sp.name             AS state_province_name,
+        cr.country_region_code,
+        cr.name             AS country_name,
 
-FROM silver.sales_customer c
+        c.modified_date     AS valid_from,
+        c.end_date          AS valid_to,
+        c.is_current,
 
--- person : le PersonID du customer = BusinessEntityID dans person_person
-LEFT JOIN silver.person_person p
-    ON c.person_id = p.business_entity_id
-    AND p.is_current = TRUE
+        current_timestamp() AS ingestion_timestamp,
+        'sales_silver'      AS source_system,
 
--- address : jointure via ship_to_address ou bill_to dans le header
--- En Gold on rattache l'adresse principale du customer
--- (en pratique on utilise bill_to_address_id du header, mais ici on enrichit la dim)
-LEFT JOIN silver.person_address a
-    ON p.business_entity_id = a.address_id   -- simplification : 1 adresse par person
-    AND a.is_current = TRUE
+        YEAR(c.modified_date) AS year_valid_from
 
-LEFT JOIN silver.person_stateprovince sp
-    ON a.state_province_id = sp.state_province_id
-    AND sp.is_current = TRUE
+    FROM silver.sales_customer c
 
-LEFT JOIN silver.person_countryregion cr
-    ON sp.country_region_code = cr.country_region_code
-    AND cr.is_current = TRUE;
+    -- Jointure vers person_person via person_id
+    LEFT JOIN silver.person_person p
+        ON  c.person_id = p.business_entity_id
+        AND p.is_current = TRUE
 
-OPTIMIZE gold.dim_customer ZORDER BY (customer_id, is_current);
+    -- passer par la table de liaison pour obtenir address_id
+    LEFT JOIN silver.person_businessentityaddress bea
+        ON  p.business_entity_id = bea.business_entity_id
+        AND bea.is_current = TRUE
+
+    -- Puis joindre person_address via address_id
+    LEFT JOIN silver.person_address a
+        ON  bea.address_id = a.address_id
+        AND a.is_current = TRUE
+
+    LEFT JOIN silver.person_stateprovince sp
+        ON  a.state_province_id = sp.state_province_id
+        AND sp.is_current = TRUE
+
+    LEFT JOIN silver.person_countryregion cr
+        ON  sp.country_region_code = cr.country_region_code
+        AND cr.is_current = TRUE
+
+    WHERE c.modified_date >= date_sub(current_date(), 7)
+       OR c.customer_id NOT IN (SELECT DISTINCT customer_id FROM gold.dim_customer)
+
+) AS source
+
+ON  target.customer_id = source.customer_id
+AND target.valid_from  = source.valid_from
+
+WHEN MATCHED THEN
+    UPDATE SET
+        target.first_name          = source.first_name,
+        target.middle_name         = source.middle_name,
+        target.last_name           = source.last_name,
+        target.full_name           = source.full_name,
+        target.email_promotion     = source.email_promotion,
+        target.address_line1       = source.address_line1,
+        target.address_line2       = source.address_line2,
+        target.city                = source.city,
+        target.postal_code         = source.postal_code,
+        target.state_province_code = source.state_province_code,
+        target.state_province_name = source.state_province_name,
+        target.country_region_code = source.country_region_code,
+        target.country_name        = source.country_name,
+        target.valid_to            = source.valid_to,
+        target.is_current          = source.is_current,
+        target.ingestion_timestamp = source.ingestion_timestamp
+
+WHEN NOT MATCHED THEN
+    INSERT *;
+
+
+---
+
+**Ce qui a été corrigé et amélioré :**
+
+La chaîne de jointure pour l'adresse était cassée. La bonne chaîne est :
+```
+sales_customer
+    → person_person         (via person_id = business_entity_id)
+    → person_businessentityaddress  (via business_entity_id)  ← manquait
+    → person_address        (via address_id)
+    → person_stateprovince  (via state_province_id)
+    → person_countryregion  (via country_region_code)
+
+
+-- 3. Optimisation post-merge (à lancer périodiquement, pas à chaque batch)
+OPTIMIZE gold.dim_customer
+ZORDER BY (customer_id, is_current, country_region_code);
 
 
 

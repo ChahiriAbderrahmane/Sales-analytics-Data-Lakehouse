@@ -80,9 +80,9 @@ sqoop import \
 sqoop import \
   --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
   --username sa --password 'Chahiri@2022' \
-  --query "SELECT * FROM [Person].[CountryRegion] WHERE \$CONDITIONS" \
+  --query "SELECT * FROM [Person].[BusinessEntityAddress] WHERE \$CONDITIONS" \
   --split-by "1" \
-  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_CountryRegion" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_BusinessEntityAddress" \
   --num-mappers 1 \
   --fields-terminated-by ',' \
   --delete-target-dir

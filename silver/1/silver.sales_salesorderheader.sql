@@ -267,6 +267,6 @@ WHERE t.sales_order_id IS NULL;
 -- ───────────────────────────────────────────────────────────────────────────
 OPTIMIZE silver.sales_salesorderheader
 ZORDER BY (customer_id, order_date);
-
+ 
 SET spark.databricks.delta.retentionDurationCheck.enabled = false;
 VACUUM silver.sales_salesorderheader RETAIN 168 HOURS;

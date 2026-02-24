@@ -361,9 +361,23 @@ LOCATION '/user/hadoop/sales_data_mart/bronze/SpecialOffer'
 TBLPROPERTIES ("serialization.null.format"="null");
 
 
+-- Person.BusinessEntityAddress
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.person_businessentityaddress (
+    business_entity_id      INT,
+    address_id              INT,
+    address_type_id         INT,
+    rowguid                 STRING,
+    modified_date           TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Person_BusinessEntityAddress'
+TBLPROPERTIES ("serialization.null.format"="null");
 
 
-
+person_businessentityaddress
 person_address
 person_countryregion
 person_person
