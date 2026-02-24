@@ -72,7 +72,6 @@ FROM person_person_ranked b
 JOIN silver.person_person t
     ON  b.business_entity_id = t.business_entity_id
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.first_name      <> t.first_name
    OR b.last_name       <> t.last_name
    OR b.middle_name     <> t.middle_name
@@ -119,9 +118,29 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM person_person_ranked b
-JOIN ids_to_close s
-    ON b.business_entity_id = s.business_entity_id;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(first_name)     OVER (PARTITION BY business_entity_id ORDER BY modified_date ASC) AS prev_first_name,
+        LAG(last_name)   OVER (PARTITION BY business_entity_id ORDER BY modified_date ASC) AS prev_last_name,
+        LAG(middle_name)     OVER (PARTITION BY business_entity_id ORDER BY modified_date ASC) AS prev_middle_name,
+        LAG(title)     OVER (PARTITION BY business_entity_id ORDER BY modified_date ASC) AS prev_title,
+        LAG(email_promotion)     OVER (PARTITION BY business_entity_id ORDER BY modified_date ASC) AS prev_email_promotion,
+        LAG(person_type)     OVER (PARTITION BY business_entity_id ORDER BY modified_date ASC) AS prev_person_type
+    FROM person_person_ranked
+) b
+JOIN ids_to_close s ON b.business_entity_id = s.business_entity_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.first_name      <> COALESCE(b.prev_first_name,      0)     OR
+     b.last_name       <> COALESCE(b.prev_last_name,       0)     OR
+     b.middle_name     <> COALESCE(b.prev_middle_name,     0)     OR
+     b.title           <> COALESCE(b.prev_title,           0)     OR
+     b.email_promotion <> COALESCE(b.prev_email_promotion, 0)     OR
+     b.person_type     <> COALESCE(b.prev_person_type,     0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)

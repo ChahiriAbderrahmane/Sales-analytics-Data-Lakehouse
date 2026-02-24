@@ -52,7 +52,6 @@ FROM person_countryregion_ranked b
 JOIN silver.person_countryregion t
     ON  b.country_region_code = t.country_region_code
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.name <> t.name
 GROUP BY b.country_region_code;
 
@@ -84,9 +83,19 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM person_countryregion_ranked b
-JOIN ids_to_close s
-    ON b.country_region_code = s.country_region_code;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(name)     OVER (PARTITION BY country_region_code ORDER BY modified_date ASC) AS prev_name
+    FROM person_countryregion_ranked
+) b
+JOIN ids_to_close s ON b.country_region_code = s.country_region_code
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.name <> COALESCE(b.prev_name, 0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux codes (jamais vus dans silver)

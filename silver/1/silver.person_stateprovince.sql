@@ -62,7 +62,6 @@ FROM person_stateprovince_ranked b
 JOIN silver.person_stateprovince t
     ON  b.state_province_id = t.state_province_id
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.name                        <> t.name
    OR b.country_region_code         <> t.country_region_code
    OR b.territory_id                <> t.territory_id
@@ -102,9 +101,25 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM person_stateprovince_ranked b
-JOIN ids_to_close s
-    ON b.state_province_id = s.state_province_id;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(name)          OVER (PARTITION BY state_province_id ORDER BY modified_date ASC) AS prev_name,
+        LAG(country_region_code)   OVER (PARTITION BY state_province_id ORDER BY modified_date ASC) AS prev_country_region_code,
+        LAG(territory_id)     OVER (PARTITION BY state_province_id ORDER BY modified_date ASC) AS prev_territory_id,
+        LAG(is_only_state_province_flag)     OVER (PARTITION BY state_province_id ORDER BY modified_date ASC) AS prev_is_only_state_province_flag
+    FROM person_stateprovince_ranked
+) b
+JOIN ids_to_close s ON b.state_province_id = s.state_province_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.name                        <> COALESCE(b.prev_name,                        0)     OR
+     b.country_region_code         <> COALESCE(b.prev_country_region_code,         0)     OR
+     b.territory_id                <> COALESCE(b.prev_territory_id,                0)     OR
+     b.is_only_state_province_flag <> COALESCE(b.prev_is_only_state_province_flag, 0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)

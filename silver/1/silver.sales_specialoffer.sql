@@ -71,7 +71,6 @@ FROM sales_specialoffer_ranked b
 JOIN silver.sales_specialoffer t
     ON  b.special_offer_id = t.special_offer_id
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.description    IS DISTINCT FROM t.description
    OR b.discount_pct   IS DISTINCT FROM t.discount_pct
    OR b.type           IS DISTINCT FROM t.type

@@ -64,7 +64,6 @@ FROM person_address_ranked b
 JOIN silver.person_address t
     ON  b.address_id = t.address_id
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.address_line1     <> t.address_line1
    OR b.address_line2     <> t.address_line2
    OR b.city              <> t.city
@@ -106,9 +105,27 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM person_address_ranked b
-JOIN ids_to_close s
-    ON b.address_id = s.address_id;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(address_line1)     OVER (PARTITION BY address_id ORDER BY modified_date ASC) AS prev_address_line1,
+        LAG(address_line2)     OVER (PARTITION BY address_id ORDER BY modified_date ASC) AS prev_address_line2,
+        LAG(city)              OVER (PARTITION BY address_id ORDER BY modified_date ASC) AS prev_city,
+        LAG(postal_code)       OVER (PARTITION BY address_id ORDER BY modified_date ASC) AS prev_postal_code,
+        LAG(state_province_id)OVER (PARTITION BY address_id ORDER BY modified_date ASC) AS prev_state_province_id
+    FROM person_address_ranked
+) b
+JOIN ids_to_close s ON b.address_id = s.address_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.address_line1     <> COALESCE(b.prev_address_line1,     '')     OR
+     b.address_line2     <> COALESCE(b.prev_address_line2,     '')     OR
+     b.city              <> COALESCE(b.prev_city,              '')     OR
+     b.postal_code       <> COALESCE(b.prev_postal_code,       '')     OR
+     b.state_province_id <> COALESCE(b.prev_state_province_id, 0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)

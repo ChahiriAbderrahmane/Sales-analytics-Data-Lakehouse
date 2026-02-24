@@ -54,7 +54,6 @@ FROM production_productcategory_ranked b
 JOIN silver.production_productcategory t
     ON  b.product_category_id = t.product_category_id
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.name <> t.name
 GROUP BY b.product_category_id;
 
@@ -87,9 +86,21 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM production_productcategory_ranked b
-JOIN ids_to_close s
-    ON b.product_category_id = s.product_category_id;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(name)     OVER (PARTITION BY product_category_id ORDER BY modified_date ASC) AS prev_name,
+        LAG(product_category_id)   OVER (PARTITION BY product_category_id ORDER BY modified_date ASC) AS prev_product_category_id
+    FROM production_productcategory_ranked
+) b
+JOIN ids_to_close s ON b.product_category_id = s.product_category_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.name                <> COALESCE(b.prev_name,                '')     OR
+     b.product_category_id <> COALESCE(b.prev_product_category_id, 0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)

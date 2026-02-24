@@ -37,7 +37,7 @@ WHERE b.SalesOrderID  IS NOT NULL
   );
 
 OPTIMIZE silver.sales_salesorderheadersalesreason ZORDER BY (sales_order_id);
-
+ 
 
 SET spark.databricks.delta.retentionDurationCheck.enabled = false;
 VACUUM silver.sales_salesorderheadersalesreason  RETAIN 2 HOURS;

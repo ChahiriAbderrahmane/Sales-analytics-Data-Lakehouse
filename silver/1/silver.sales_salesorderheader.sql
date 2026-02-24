@@ -142,7 +142,6 @@ FROM bronze_ranked b
 JOIN silver.sales_salesorderheader t
     ON b.sales_order_id = t.sales_order_id
     AND t.is_current = TRUE
-    AND b.rn = 1
 WHERE b.sub_total   <> t.sub_total
    OR b.status_code <> t.status_code
    OR b.total_due   <> t.total_due
@@ -166,6 +165,7 @@ WHEN MATCHED THEN UPDATE SET
 -- ÉTAPE 3 : Insérer toutes les versions pour les IDs modifiés
 -- JOIN remplace le NOT EXISTS / IN avec sous-requête
 -- ───────────────────────────────────────────────────────────────────────────
+-- Étape 3 corrigée : Insérer seulement les versions qui représentent un vrai changement
 INSERT INTO silver.sales_salesorderheader
 SELECT
     b.sales_order_id,
@@ -200,11 +200,23 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM bronze_ranked b
--- JOIN sur ids_to_close remplace la sous-requête IN (...)
-JOIN ids_to_close s
-    ON b.sales_order_id = s.sales_order_id;
-
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(sub_total)     OVER (PARTITION BY sales_order_id ORDER BY modified_date ASC) AS prev_sub_total,
+        LAG(status_code)   OVER (PARTITION BY sales_order_id ORDER BY modified_date ASC) AS prev_status_code,
+        LAG(total_due)     OVER (PARTITION BY sales_order_id ORDER BY modified_date ASC) AS prev_total_due
+    FROM bronze_ranked
+) b
+JOIN ids_to_close s ON b.sales_order_id = s.sales_order_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.sub_total     <> COALESCE(b.prev_sub_total,     0)     OR
+     b.status_code   <> COALESCE(b.prev_status_code,   0)     OR
+     b.total_due     <> COALESCE(b.prev_total_due,     0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)
 -- LEFT JOIN + IS NULL remplace NOT EXISTS (...)

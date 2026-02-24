@@ -111,7 +111,7 @@ FROM sales_salesreason_ranked b
 LEFT JOIN silver.sales_salesreason t
     ON b.sales_reason_id = t.sales_reason_id
 WHERE t.sales_reason_id IS NULL;
-
+ 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 5 : Optimisation
 -- ───────────────────────────────────────────────────────────────────────────

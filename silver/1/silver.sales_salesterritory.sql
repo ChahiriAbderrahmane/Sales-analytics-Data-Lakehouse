@@ -68,10 +68,9 @@ FROM sales_salesterritory_ranked b
 JOIN silver.sales_salesterritory t
     ON  b.territory_id = t.territory_id
     AND t.is_current = TRUE
-    AND b.rn = 1
-WHERE b.name                IS DISTINCT FROM t.name
-   OR b.country_region_code IS DISTINCT FROM t.country_region_code
-   OR b.territory_group     IS DISTINCT FROM t.territory_group
+WHERE b.name                <> t.name
+   OR b.country_region_code <> t.country_region_code
+   OR b.territory_group     <> t.territory_group
 GROUP BY b.territory_id;
 
 -- ───────────────────────────────────────────────────────────────────────────

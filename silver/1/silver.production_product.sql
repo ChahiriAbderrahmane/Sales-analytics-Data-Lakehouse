@@ -154,9 +154,29 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM production_product_ranked b
-JOIN ids_to_close s
-    ON b.product_id = s.product_id;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(name)     OVER (PARTITION BY product_id ORDER BY modified_date ASC) AS prev_name,
+        LAG(list_price)   OVER (PARTITION BY product_id ORDER BY modified_date ASC) AS prev_list_price,
+        LAG(standard_cost)     OVER (PARTITION BY product_id ORDER BY modified_date ASC) AS prev_standard_cost,
+        LAG(product_line)     OVER (PARTITION BY product_id ORDER BY modified_date ASC) AS prev_product_line,
+        LAG(class)   OVER (PARTITION BY product_id ORDER BY modified_date ASC) AS prev_class,
+        LAG(product_subcategory_id)     OVER (PARTITION BY product_id ORDER BY modified_date ASC) AS prev_product_subcategory_id
+    FROM production_product_ranked
+) b
+JOIN ids_to_close s ON b.product_id = s.product_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.name                   <> COALESCE(b.prev_name,                   '')     OR
+     b.list_price             <> COALESCE(b.prev_list_price,             0)     OR
+     b.standard_cost          <> COALESCE(b.prev_standard_cost,          0)     OR
+     b.product_line           <> COALESCE(b.prev_product_line,           '')     OR
+     b.class                  <> COALESCE(b.prev_class,                  '')     OR
+     b.product_subcategory_id <> COALESCE(b.prev_product_subcategory_id, 0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)

@@ -60,11 +60,10 @@ FROM sales_customer_ranked b
 JOIN silver.sales_customer t
     ON  b.customer_id = t.customer_id
     AND t.is_current = TRUE
-    AND b.rn = 1
-WHERE b.territory_id   IS DISTINCT FROM t.territory_id
-   OR b.store_id       IS DISTINCT FROM t.store_id
-   OR b.person_id      IS DISTINCT FROM t.person_id
-   OR b.account_number IS DISTINCT FROM t.account_number
+WHERE b.territory_id   <> t.territory_id
+   OR b.store_id       <> t.store_id 
+   OR b.person_id      <> t.person_id
+   OR b.account_number <> t.account_number
 GROUP BY b.customer_id;
 
 -- ───────────────────────────────────────────────────────────────────────────
@@ -99,9 +98,25 @@ SELECT
         WHEN b.rn = 1 THEN CAST('9999-12-31' AS TIMESTAMP)
         ELSE b.next_version_date
     END                                             AS end_date
-FROM sales_customer_ranked b
-JOIN ids_to_close s
-    ON b.customer_id = s.customer_id;
+FROM (
+    -- On ranke chronologiquement (ASC) pour calculer le précédent état
+    SELECT 
+        *,
+        LAG(territory_id)     OVER (PARTITION BY customer_id ORDER BY modified_date ASC) AS prev_territory_id,
+        LAG(store_id)         OVER (PARTITION BY customer_id ORDER BY modified_date ASC) AS prev_store_id,
+        LAG(person_id)        OVER (PARTITION BY customer_id ORDER BY modified_date ASC) AS prev_person_id,
+        LAG(account_number)   OVER (PARTITION BY customer_id ORDER BY modified_date ASC) AS prev_account_number
+    FROM sales_customer_ranked
+) b
+JOIN ids_to_close s ON b.customer_id = s.customer_id
+WHERE 
+    -- On insère seulement si cette ligne diffère de la précédente (dans le batch ou de silver)
+    (b.territory_id     <> COALESCE(b.prev_territory_id,     0)     OR
+     b.store_id         <> COALESCE(b.prev_store_id,         0)     OR
+     b.person_id        <> COALESCE(b.prev_person_id,        0)     OR
+     b.account_number   <> COALESCE(b.prev_account_number,   0))
+    -- OU si c'est la première ligne du batch et qu'elle diffère de silver (déjà couvert par ids_to_close)
+;
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- ÉTAPE 4 : Insérer les nouveaux IDs (jamais vus dans silver)
