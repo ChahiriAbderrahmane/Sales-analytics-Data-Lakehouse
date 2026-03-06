@@ -32,8 +32,6 @@ TBLPROPERTIES (
 );
 
 -- ÉTAPE 0 : Classer les lignes bronze
--- Note : EndDate de l'offre → renommé end_date_offer pour éviter la collision
---        avec la colonne SCD end_date
 CREATE OR REPLACE TEMP VIEW sales_specialoffer_ranked AS
 SELECT
     CAST(SpecialOfferID AS INT)            AS special_offer_id,

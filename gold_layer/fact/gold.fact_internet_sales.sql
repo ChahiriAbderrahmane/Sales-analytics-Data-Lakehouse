@@ -1,14 +1,11 @@
--- ============================================================
--- 1. CREATE TABLE fact_internet_sales
--- ============================================================
-CREATE TABLE IF NOT EXISTS gold.fact_internet_sales (
+CREATE TABLE gold.fact_internet_sales (
     ProductKey              INT,
     OrderDateKey            INT,
     DueDateKey              INT,
     ShipDateKey             INT,
     CustomerKey             INT,
     PromotionKey            INT,
-    CurrencyKey             INT,
+    CurrencyKey             STRING,  
     SalesTerritoryKey       INT,
     SalesOrderNumber        STRING      NOT NULL,
     SalesOrderLineNumber    TINYINT     NOT NULL,
@@ -31,7 +28,6 @@ CREATE TABLE IF NOT EXISTS gold.fact_internet_sales (
     ingestion_timestamp     TIMESTAMP
 )
 USING DELTA
--- Partitionner par année de commande pour le partition pruning
 PARTITIONED BY (OrderDateKey)
 LOCATION '/user/hadoop/sales_data_mart/gold/fact_internet_sales'
 TBLPROPERTIES (
@@ -43,83 +39,48 @@ TBLPROPERTIES (
     'delta.enableChangeDataFeed'       = 'true'
 );
 
+-- ============================================================
+-- ÉTAPE 1 : (Matérialisation du CDF)
+-- ============================================================
+DROP TABLE IF EXISTS gold.temp_fact_cdf_staging;
+
+-- Faut l'updater manuellement à chaque fois avant le lancement de ce script
+   -- kinda tricky
+
+CREATE TABLE gold.temp_fact_cdf_staging USING DELTA AS 
+SELECT * FROM table_changes('silver.sales_salesorderheader', 1)
+WHERE _change_type IN ('insert', 'update_postimage');
 
 -- ============================================================
--- 2. Initialisation pipeline_control pour la fact
--- ============================================================
-INSERT INTO gold.pipeline_control
-SELECT
-    'silver.sales_salesorderheader'     AS table_name,
-    0                                   AS last_version,
-    current_timestamp()                 AS last_run_timestamp
-WHERE NOT EXISTS (
-    SELECT 1 FROM gold.pipeline_control
-    WHERE table_name = 'silver.sales_salesorderheader'
-);
-
-
--- ============================================================
--- 3. CACHE du résultat enrichi via CDF
---    Seules les commandes nouvelles/modifiées depuis le dernier run
+-- ÉTAPE 2 : CACHE DE LA TABLE DE FAITS
 -- ============================================================
 CACHE TABLE fact_internet_sales_staging AS
-WITH cdf_changes AS (
-    -- Récupérer uniquement les SalesOrderID qui ont changé
-    SELECT DISTINCT sales_order_id
-    FROM table_changes(
-        'silver.sales_salesorderheader',
-        (SELECT last_version + 1
-         FROM gold.pipeline_control
-         WHERE table_name = 'silver.sales_salesorderheader')
-    )
-    WHERE _change_type IN ('insert', 'update_postimage')
-      AND online_order_flag = TRUE   -- Internet Sales uniquement
-)
 SELECT
-    -- FK vers les dimensions
-    sod.product_id                                          AS ProductKey,
-
-    -- DateKey = YYYYMMDD (INT) pour jointure avec DimDate
+    dp.ProductKey,
     CAST(DATE_FORMAT(soh.order_date,  'yyyyMMdd') AS INT)   AS OrderDateKey,
     CAST(DATE_FORMAT(soh.due_date,    'yyyyMMdd') AS INT)   AS DueDateKey,
     CAST(DATE_FORMAT(soh.ship_date,   'yyyyMMdd') AS INT)   AS ShipDateKey,
-
-    soh.customer_id                                         AS CustomerKey,
-    sod.special_offer_id                                    AS PromotionKey,
-    soh.currency_rate_id                                    AS CurrencyKey,
-    soh.territory_id                                        AS SalesTerritoryKey,
-
-    -- PK composite
+    dc.CustomerKey,
+    dpr.PromotionKey,
+    dcu.currency_code                                       AS CurrencyKey,  
+    dst.sales_territory_id                                  AS SalesTerritoryKey, 
     soh.sales_order_number                                  AS SalesOrderNumber,
-    sod.sales_order_detail_id                               AS SalesOrderLineNumber,
-
-    -- Mesures
-    sod.revision_number                                     AS RevisionNumber,
+    CAST(sod.sales_order_detail_id AS TINYINT)              AS SalesOrderLineNumber,
+    soh.revision_number                                     AS RevisionNumber,  
     sod.order_qty                                           AS OrderQuantity,
     sod.unit_price                                          AS UnitPrice,
     sod.line_total                                          AS ExtendedAmount,
     sod.unit_price_discount                                 AS UnitPriceDiscountPct,
-
-    -- DiscountAmount calculé
-    ROUND(sod.unit_price * sod.unit_price_discount * sod.order_qty, 4)
-                                                            AS DiscountAmount,
-
-    -- StandardCost depuis silver.production_product
-    pp.standard_cost                                        AS ProductStandardCost,
-
-    -- TotalProductCost = StandardCost × OrderQty
-    ROUND(pp.standard_cost * sod.order_qty, 4)              AS TotalProductCost,
-
-    -- SalesAmount = UnitPrice × (1 - Discount) × Qty
-    ROUND(sod.unit_price * (1 - sod.unit_price_discount) * sod.order_qty, 4)
-                                                            AS SalesAmount,
-
-    -- Répartition TaxAmt et Freight au prorata de la ligne
-    ROUND(soh.tax_amt * (sod.line_total / soh.sub_total), 4)
-                                                            AS TaxAmt,
-    ROUND(soh.freight * (sod.line_total / soh.sub_total), 4)
-                                                            AS Freight,
-
+    ROUND(sod.unit_price * sod.unit_price_discount
+          * sod.order_qty, 4)                               AS DiscountAmount,
+    dp.StandardCost                                         AS ProductStandardCost,
+    ROUND(dp.StandardCost * sod.order_qty, 4)               AS TotalProductCost,
+    ROUND(sod.unit_price * (1 - sod.unit_price_discount)
+          * sod.order_qty, 4)                               AS SalesAmount,
+    ROUND(soh.tax_amt
+          * (sod.line_total / soh.sub_total), 4)            AS TaxAmt,
+    ROUND(soh.freight
+          * (sod.line_total / soh.sub_total), 4)            AS Freight,
     sod.carrier_tracking_number                             AS CarrierTrackingNumber,
     soh.purchase_order_number                               AS CustomerPONumber,
     soh.order_date                                          AS OrderDate,
@@ -127,30 +88,46 @@ SELECT
     soh.ship_date                                           AS ShipDate
 
 FROM silver.sales_salesorderheader soh
--- JOIN uniquement sur les commandes changées → pas de full scan
-INNER JOIN cdf_changes chg
-    ON soh.sales_order_id = chg.sales_order_id
--- Lignes de détail
+
+INNER JOIN (
+    SELECT DISTINCT sales_order_id
+    FROM gold.temp_fact_cdf_staging
+    WHERE online_order_flag = TRUE
+) chg ON soh.sales_order_id = chg.sales_order_id
+
 INNER JOIN silver.sales_salesorderdetail sod
     ON soh.sales_order_id = sod.sales_order_id
--- StandardCost du produit
-LEFT JOIN silver.production_product pp
-    ON sod.product_id = pp.product_id
-    AND pp.is_current = TRUE
+
+LEFT JOIN gold.dim_product dp
+    ON sod.product_id = dp.ProductKey
+
+LEFT JOIN gold.dim_customer dc
+    ON soh.customer_id = dc.CustomerKey
+    AND dc.is_current = TRUE
+
+LEFT JOIN gold.dim_promotion dpr
+    ON sod.special_offer_id = dpr.PromotionKey
+
+LEFT JOIN silver.sales_currencyrate scr
+    ON soh.currency_rate_id = scr.currency_rate_id
+
+LEFT JOIN gold.dim_currency dcu
+    ON scr.to_currency_code = dcu.currency_code  
+
+INNER JOIN gold.dim_sales_territory dst
+    ON soh.territory_id = dst.sales_territory_id  
+
 WHERE soh.online_order_flag = TRUE
-  AND soh.is_current = TRUE;
+  AND soh.is_current = TRUE
+  AND soh.sub_total > 0;
 
+-- Insertion des données dans la fact_table avec logique de MERGE (UPDATE/INSERT)
 
--- ============================================================
--- 4. MERGE dans fact_internet_sales
---    PK composite : SalesOrderNumber + SalesOrderLineNumber
--- ============================================================
 MERGE INTO gold.fact_internet_sales tgt
 USING fact_internet_sales_staging src
 ON  tgt.SalesOrderNumber     = src.SalesOrderNumber
 AND tgt.SalesOrderLineNumber = src.SalesOrderLineNumber
 
--- Ligne existante modifiée (ex: révision, annulation)
 WHEN MATCHED THEN UPDATE SET
     tgt.ProductKey              = src.ProductKey,
     tgt.OrderDateKey            = src.OrderDateKey,
@@ -178,7 +155,6 @@ WHEN MATCHED THEN UPDATE SET
     tgt.ShipDate                = src.ShipDate,
     tgt.ingestion_timestamp     = current_timestamp()
 
--- Nouvelle ligne → insertion
 WHEN NOT MATCHED THEN INSERT (
     ProductKey, OrderDateKey, DueDateKey, ShipDateKey,
     CustomerKey, PromotionKey, CurrencyKey, SalesTerritoryKey,
@@ -203,30 +179,11 @@ WHEN NOT MATCHED THEN INSERT (
     current_timestamp()
 );
 
-
 -- ============================================================
--- 5. Mettre à jour pipeline_control
--- ============================================================
-MERGE INTO gold.pipeline_control tgt
-USING (
-    SELECT
-        'silver.sales_salesorderheader'     AS table_name,
-        (SELECT MAX(version)
-         FROM (DESCRIBE HISTORY silver.sales_salesorderheader))
-                                            AS last_version,
-        current_timestamp()                 AS last_run_timestamp
-) src
-ON tgt.table_name = src.table_name
-WHEN MATCHED THEN UPDATE SET
-    tgt.last_version        = src.last_version,
-    tgt.last_run_timestamp  = src.last_run_timestamp;
-
-
--- ============================================================
--- 6. Libérer le cache et optimiser
+-- ÉTAPE 4 : NETTOYER
 -- ============================================================
 UNCACHE TABLE fact_internet_sales_staging;
+DROP TABLE IF EXISTS gold.temp_fact_cdf_staging;
 
--- ZORDER sur les colonnes les plus filtrées dans les requêtes analytiques
-OPTIMIZE gold.fact_internet_sales
-ZORDER BY (CustomerKey, ProductKey, OrderDateKey);
+-- Optimisation (ZORDER sur les clés les plus requêtées)
+OPTIMIZE gold.fact_internet_sales ZORDER BY (CustomerKey, ProductKey);

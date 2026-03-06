@@ -535,6 +535,12 @@ LOCATION '/user/hadoop/sales_data_mart/bronze/Production_UnitMeasure'
 TBLPROPERTIES ("serialization.null.format"="null");
 
 
+
+
+
+
+
+
 person_businessentityaddress
 person_address
 person_countryregion
@@ -550,12 +556,8 @@ sales_salesorderdetail
 sales_salesorderheadersalesreason
 sales_salesreason
 sales_salesterritory
-
-
-
 sales_salesorderheader
 sales_specialoffer
-
-
+and many more...
 
 

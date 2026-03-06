@@ -1,6 +1,5 @@
 -- ============================================================
--- ÉTAPE 0 : MATÉRIALISATION PHYSIQUE DU CDF (Contournement du bug Catalyst)
--- Le SELECT * force la capture de toutes les colonnes sans déclencher le parseur strict.
+-- ÉTAPE 0 : MATÉRIALISATION PHYSIQUE DU CDF 
 -- ============================================================
 DROP TABLE IF EXISTS gold.temp_cdf_staging;
 
@@ -53,7 +52,7 @@ SELECT
     c.modified_date                                         AS valid_from,
     c.end_date                                              AS valid_to, -- On capte la fin de vie depuis Silver
     c.is_current                                            -- On capte le statut (TRUE/FALSE) depuis Silver
-FROM gold.temp_cdf_staging c  -- <=== ON LIT DIRECTEMENT LE CDF ICI
+FROM gold.temp_cdf_staging c  
 LEFT JOIN silver.person_person pp
     ON c.person_id = pp.business_entity_id AND pp.is_current = TRUE
 LEFT JOIN demographics_parsed d
@@ -74,9 +73,8 @@ LEFT JOIN gold.ref_occupation_translation occ
     ON xpath_string(d.xml_clean, '//IndividualSurvey/Occupation') = occ.EnglishValue
 WHERE c._change_type IN ('insert', 'update_postimage');
 
-
 -- ============================================================
--- ÉTAPE 2 : Archiver dans history (Ta nouvelle logique brillante)
+-- ÉTAPE 2 : Archiver dans history 
 -- ============================================================
 -- On prend les lignes "is_current = FALSE" du CDF et on les pousse en archive
 INSERT INTO gold.dim_customer_history
@@ -170,6 +168,6 @@ WHEN MATCHED THEN UPDATE SET
 -- ÉTAPE 5 : Nettoyage Final
 -- ============================================================
 UNCACHE TABLE silver_customer_enriched;
-DROP TABLE IF EXISTS gold.temp_cdf_staging;  -- Suppression de la table temporaire physique
+DROP TABLE IF EXISTS gold.temp_cdf_staging; 
 OPTIMIZE gold.dim_customer         ZORDER BY (CustomerKey);
 OPTIMIZE gold.dim_customer_history ZORDER BY (CustomerKey, valid_from);

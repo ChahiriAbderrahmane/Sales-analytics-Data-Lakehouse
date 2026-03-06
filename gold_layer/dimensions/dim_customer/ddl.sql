@@ -1,6 +1,3 @@
--- ============================================================
--- COUCHE GOLD : DIM_CUSTOMER (Table principale actuelle)
--- ============================================================
 CREATE TABLE IF NOT EXISTS gold.dim_customer (
     CustomerKey             INT             NOT NULL,
     GeographyKey            INT,
@@ -80,14 +77,14 @@ CREATE TABLE IF NOT EXISTS gold.dim_customer_history (
     DateFirstPurchase       TIMESTAMP,
     CommuteDistance         STRING,
     valid_from              TIMESTAMP       NOT NULL,
-    valid_to                TIMESTAMP,      -- AJOUT : Fin de validité
+    valid_to                TIMESTAMP,      
     is_current              BOOLEAN,
-    closed_timestamp        TIMESTAMP,      -- AJOUT : Date technique de fermeture
+    closed_timestamp        TIMESTAMP,      
     ingestion_timestamp     TIMESTAMP,
-    year_valid_to           INT             -- AJOUT : Clé de partitionnement
+    year_valid_to           INT             
 )
 USING DELTA
-PARTITIONED BY (year_valid_to)              -- AJOUT : Optimisation des lectures historiques
+PARTITIONED BY (year_valid_to)             
 LOCATION '/user/hadoop/sales_data_mart/gold/dim_customer_history'
 TBLPROPERTIES ( 
     'delta.minReaderVersion'           = '1',
@@ -97,7 +94,6 @@ TBLPROPERTIES (
     'delta.columnMapping.mode'         = 'name',
     'delta.enableChangeDataFeed'       = 'true'
 );
-
 
 -- ============================================================
 -- 1. CRÉATION ET REMPLISSAGE DE LA TABLE EDUCATION
@@ -109,7 +105,7 @@ CREATE TABLE IF NOT EXISTS gold.ref_education_translation (
 ) USING DELTA
 LOCATION '/user/hadoop/sales_data_mart/gold/ref_education_translation';
 
--- Suppression des données existantes (au cas où tu relances le script)
+-- Suppression des données existantes si ce script est relancé
 DELETE FROM gold.ref_education_translation;
 
 -- Insertion des traductions
@@ -119,7 +115,6 @@ INSERT INTO gold.ref_education_translation VALUES
     ('High School', 'Educación secundaria', 'Lycée'),
     ('Partial High School', 'Educación secundaria parcial', 'Lycée partiel'),
     ('Graduate Degree', 'Título de posgrado', 'Diplôme d''études supérieures');
-
 
 -- ============================================================
 -- 2. CRÉATION ET REMPLISSAGE DE LA TABLE OCCUPATION

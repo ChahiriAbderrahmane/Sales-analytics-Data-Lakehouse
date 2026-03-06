@@ -75,13 +75,13 @@ TBLPROPERTIES (
 --     p._ingestion_timestamp
 -- FROM silver.production_product p
 -- LEFT JOIN silver.production_productmodel pm
---     ON p.product_model_id = pm.product_model_id       -- ✅ snake_case
+--     ON p.product_model_id = pm.product_model_id      
 --     AND pm.is_current = TRUE
 -- LEFT JOIN silver.production_productproductphoto ppp
---     ON p.product_id = ppp.product_id                  -- ✅ snake_case
+--     ON p.product_id = ppp.product_id                 
 --     AND ppp.is_current = TRUE
 -- LEFT JOIN silver.production_productphoto ph
---     ON ppp.product_photo_id = ph.product_photo_id;    -- ✅ snake_case
+--     ON ppp.product_photo_id = ph.product_photo_id;    
 
 
 INSERT INTO gold.dim_product_history
