@@ -43,6 +43,10 @@ spark-sql --master yarn \
   --executor-cores 1 \
   --num-executors 2
 
+spark-sql>
+SET spark.sql.extensions;
+SET spark.sql.catalog.spark_catalog;
+
 
 
 
@@ -70,19 +74,59 @@ sqoop import \
 sqoop import \
   --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
   --username sa --password 'Chahiri@2022' \
-  --query "SELECT * FROM [Sales].[Currency] WHERE \$CONDITIONS" \
+  --query "SELECT * FROM [Person].[Person] WHERE \$CONDITIONS" \
   --split-by "1" \
-  --target-dir "/user/hadoop/sales_data_mart/bronze/Currency" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_Person" \
   --num-mappers 1 \
-  --fields-terminated-by ',' \
+  --fields-terminated-by '\001' \
+  --hive-drop-import-delims \
   --delete-target-dir
 
-sqoop import \
-  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
-  --username sa --password 'Chahiri@2022' \
-  --query "SELECT * FROM [Person].[BusinessEntityAddress] WHERE \$CONDITIONS" \
-  --split-by "1" \
-  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_BusinessEntityAddress" \
-  --num-mappers 1 \
-  --fields-terminated-by ',' \
-  --delete-target-dir
+
+
+
+DESCRIBE HISTORY silver.sales_customer;
+DESCRIBE DETAIL silver.sales_customer;
+
+spark-sql (gold)> DESCRIBE TABLE gold.dim_date;
+
+date_sk                 int
+date                    date
+year                    int
+quarter                 int
+quarter_name            string
+month                   int
+month_name              string
+day                     int
+day_of_week             int
+day_name                string
+week_of_year            int
+is_weekday              boolean
+is_weekend              boolean
+is_last_day_of_month    boolean
+fiscal_year             int
+fiscal_quarter          int
+fiscal_month            int
+
+
+
+nano /home/ubuntu/gold_dim_customer.sh
+chmod +x /home/ubuntu/gold_dim_customer.sh
+/home/ubuntu/gold_dim_customer.sh
+
+# Ou avec les logs dans un fichier pour débugger
+/home/ubuntu/gold_dim_customer.sh 2>&1 | tee /home/ubuntu/logs/gold_dim_customer_$(date +%Y%m%d_%H%M%S).log
+
+
+
+
+
+
+
+ubuntu@master:~$ # Test manuel pour voir ce que retourne la commande
+spark-sql \
+  --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" \
+  --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog" \
+  -S \
+  -e "DESCRIBE HISTORY silver.sales_customer LIMIT 1;" \
+  2>&1 | cat

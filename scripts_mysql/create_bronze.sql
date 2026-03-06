@@ -377,6 +377,164 @@ LOCATION '/user/hadoop/sales_data_mart/bronze/Person_BusinessEntityAddress'
 TBLPROPERTIES ("serialization.null.format"="null");
 
 
+-- Person.EmailAddress
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.person_emailaddress (
+    BusinessEntityID    INT,
+    EmailAddressID     INT,
+    EmailAddress       STRING,
+    rowguid             STRING,
+    ModifiedDate        TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Person_EmailAddress'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+-- Person.PersonPhone
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.person_personphone (
+    BusinessEntityID    INT,
+    PhoneNumber        STRING,
+    PhoneNumberTypeID  INT,
+    ModifiedDate        TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Person_PersonPhone'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+-- Production.ProductModel 
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.production_productmodel (
+    ProductModelID     INT,
+    Name               STRING,
+    CatalogDescription STRING,
+    Instructions       STRING,
+    rowguid            STRING,
+    ModifiedDate       TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\001'
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Production_ProductModel'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+SELECT ProductModelID, Name, LENGTH(Instructions) AS xml_chars
+FROM bronze.production_productmodel
+WHERE Instructions IS NOT NULL
+LIMIT 5;
+
+DROP TABLE IF EXISTS bronze.person_person;
+CREATE EXTERNAL TABLE bronze.person_person (
+    BusinessEntityID        INT,
+    PersonType              STRING,
+    NameStyle               BOOLEAN,
+    Title                   STRING,
+    FirstName               STRING,
+    MiddleName              STRING,
+    LastName                STRING,
+    Suffix                  STRING,
+    EmailPromotion          INT,
+    AdditionalContactInfo   STRING,
+    Demographics            STRING,
+    rowguid                 STRING,
+    ModifiedDate            TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\001'
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Person_Person'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+SELECT BusinessEntityID, LENGTH(Demographics) AS xml_chars
+FROM bronze.person_person
+WHERE Demographics IS NOT NULL
+LIMIT 5;
+
+-- ProductDescription
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.production_productdescription (
+    ProductDescriptionID   INT,
+    Description           STRING,
+    rowguid               STRING,
+    ModifiedDate          TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Production_ProductDescription'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+
+
+-- ProductModelProductDescriptionCulture
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.production_productmodelproductdescriptionculture (
+    ProductModelID          INT,
+    ProductDescriptionID   INT,
+    Culture                 STRING,
+    rowguid                 STRING,
+    ModifiedDate            TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE  
+LOCATION '/user/hadoop/sales_data_mart/bronze/Production_ProductModelProductDescriptionCulture'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+
+
+-- ProductPhoto
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.production_productphoto (
+    ProductPhotoID     INT,
+    ThumbNailPhoto    BINARY,
+    ThumbnailPhotoFileName STRING,
+    LargePhoto        BINARY,
+    LargePhotoFileName STRING,
+    rowguid           STRING,
+    ModifiedDate      TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Production_ProductPhoto'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+
+-- ProductProductPhoto
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.production_productproductphoto (
+    ProductID       INT,
+    ProductPhotoID  INT,
+    rowguid         STRING,
+    ModifiedDate    TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Production_ProductProductPhoto'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+
+
+-- UnitMeasure
+-- ============================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS bronze.production_unitmeasure (
+    UnitMeasureCode    STRING,
+    Name               STRING,
+    ModifiedDate       TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/sales_data_mart/bronze/Production_UnitMeasure'
+TBLPROPERTIES ("serialization.null.format"="null");
+
+
 person_businessentityaddress
 person_address
 person_countryregion

@@ -1,7 +1,7 @@
 -- SCD TYPE 2 — silver.production_product
 -- Clé       : product_id
 -- Surveillé : name, list_price, standard_cost, product_line, class, product_subcategory_id
-
+ 
 CREATE TABLE IF NOT EXISTS silver.production_product (
     product_id                  INT,
     name                        STRING,

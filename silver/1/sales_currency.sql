@@ -20,7 +20,7 @@ TBLPROPERTIES (
     'delta.enableDeletionVectors'        = 'true',
     'delta.columnMapping.mode'           = 'name'
 );
-
+ 
 INSERT INTO silver.sales_currency
 SELECT
     CAST(CurrencyCode   AS STRING)    AS currency_code,
