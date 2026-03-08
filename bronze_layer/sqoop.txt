@@ -130,3 +130,15 @@ spark-sql \
   -S \
   -e "DESCRIBE HISTORY silver.sales_customer LIMIT 1;" \
   2>&1 | cat
+
+
+
+
+Access key
+***REMOVED***
+***REMOVED***
+
+
+Secret access key
+***REMOVED***
+***REMOVED***
