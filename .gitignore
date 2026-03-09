@@ -1,2 +1,3 @@
 aggregates/agg_monthly_sales_manifest.json
 .env
+aws_files_for_permissions_critical/adventure-key.pem
