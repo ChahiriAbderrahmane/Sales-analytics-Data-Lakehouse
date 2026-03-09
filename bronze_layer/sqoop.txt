@@ -1,6 +1,6 @@
-yarn-site.xml  → /usr/local/hadoop/etc/hadoop/yarn-site.xml  ✅
-workers        → /usr/local/hadoop/etc/hadoop/workers         ✅
-spark-defaults → n'existe pas encore → on va le créer         ✅
+yarn-site.xml  → /usr/local/hadoop/etc/hadoop/yarn-site.xml  
+workers        → /usr/local/hadoop/etc/hadoop/workers         
+spark-defaults → n'existe pas encore → on va le créer         
 HADOOP_HOME    → /usr/local/hadoop
 SPARK_HOME     → /usr/local/spark
 
@@ -14,12 +14,6 @@ nohup hive --service metastore > /tmp/hive-metastore.log 2>&1 &
 
 # Vérifier si la connnexion s'est bien établie (on entre dans le cli de postgres sur metastore_db database)
 psql -h 172.31.24.228 -U hiveuser -d metastore_db
-
-# utiliser sparksql sur les workers et non pas le master
-spark-sql --master yarn \
-  --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" \
-  --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
-
 
 
 # pas besoin de cette commande car les config sont déjà désormais dans ""/usr/local/spark/conf/spark-defaults.conf""
@@ -47,40 +41,6 @@ spark-sql>
 SET spark.sql.extensions;
 SET spark.sql.catalog.spark_catalog;
 
-
-
-
-sqoop import \
-  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
-  --username sa --password 'Chahiri@2022' \
-  --query "SELECT * FROM [Sales].[SalesOrderHeader] WHERE \$CONDITIONS" \
-  --split-by "1" \
-  --target-dir "/user/hadoop/sales_data_mart/bronze/Sales_SalesOrderHeader" \
-  --num-mappers 1 \
-  --fields-terminated-by ',' \
-  --delete-target-dir
-
-
-sqoop import \
-  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
-  --username sa --password 'Chahiri@2022' \
-  --query "SELECT * FROM [Sales].[SalesOrderDetail] WHERE \$CONDITIONS" \
-  --split-by "1" \
-  --target-dir "/user/hadoop/sales_data_mart/bronze/Sales_SalesOrderDetail" \
-  --num-mappers 1 \
-  --fields-terminated-by ',' \
-  --delete-target-dir
-
-sqoop import \
-  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
-  --username sa --password 'Chahiri@2022' \
-  --query "SELECT * FROM [Person].[Person] WHERE \$CONDITIONS" \
-  --split-by "1" \
-  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_Person" \
-  --num-mappers 1 \
-  --fields-terminated-by '\001' \
-  --hive-drop-import-delims \
-  --delete-target-dir
 
 
 
@@ -119,10 +79,6 @@ chmod +x /home/ubuntu/gold_dim_customer.sh
 
 
 
-
-
-
-
 ubuntu@master:~$ # Test manuel pour voir ce que retourne la commande
 spark-sql \
   --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" \
@@ -130,15 +86,3 @@ spark-sql \
   -S \
   -e "DESCRIBE HISTORY silver.sales_customer LIMIT 1;" \
   2>&1 | cat
-
-
-
-
-Access key
-***REMOVED***
-***REMOVED***
-
-
-Secret access key
-***REMOVED***
-***REMOVED***

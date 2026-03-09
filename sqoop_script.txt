@@ -1,0 +1,33 @@
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Sales].[SalesOrderHeader] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Sales_SalesOrderHeader" \
+  --num-mappers 1 \
+  --fields-terminated-by ',' \
+  --delete-target-dir
+
+
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Sales].[SalesOrderDetail] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Sales_SalesOrderDetail" \
+  --num-mappers 1 \
+  --fields-terminated-by ',' \
+  --delete-target-dir
+
+sqoop import \
+  --connect "jdbc:sqlserver://172.31.24.228:1433;database=AdventureWorks2022;trustServerCertificate=true" \
+  --username sa --password 'Chahiri@2022' \
+  --query "SELECT * FROM [Person].[Person] WHERE \$CONDITIONS" \
+  --split-by "1" \
+  --target-dir "/user/hadoop/sales_data_mart/bronze/Person_Person" \
+  --num-mappers 1 \
+  --fields-terminated-by '\001' \
+  --hive-drop-import-delims \
+  --delete-target-dir
+
+...

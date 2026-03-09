@@ -59,4 +59,5 @@ spark-sql (silver)> SELECT 'person_address' AS table_name, COUNT(*) AS row_count
 -- sales_salesterritory_ranked     10
 -- sales_specialoffer_ranked       16
 -- Time taken: 28.22 seconds, Fetched 28 row(s)
+--...
 -- spark-sql (silver)>

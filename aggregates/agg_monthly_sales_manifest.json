@@ -1,0 +1,12 @@
+{
+    "fileLocations": [
+        {
+            "URIs": [
+                "s3://sales-data-mart-internet-sales-process/gold-layer-aggregate-tables/agg_monthly_sales/part-00000-bc91c0e7-1590-4db4-b17d-d5ece20c83d2-c000.snappy.parquet"
+            ]
+        }
+    ],
+    "globalUploadSettings": {
+        "format": "PARQUET"
+    }
+}

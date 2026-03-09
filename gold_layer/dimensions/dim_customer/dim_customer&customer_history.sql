@@ -1,5 +1,5 @@
 -- ============================================================
--- ÉTAPE 0 : MATÉRIALISATION PHYSIQUE DU CDF 
+-- MATÉRIALISATION PHYSIQUE DU CDF 
 -- ============================================================
 DROP TABLE IF EXISTS gold.temp_cdf_staging;
 
@@ -165,7 +165,7 @@ WHEN MATCHED THEN UPDATE SET
     tgt.last_run_timestamp = src.last_run_timestamp;
 
 -- ============================================================
--- ÉTAPE 5 : Nettoyage Final
+-- ÉTAPE 5 : Nettoyage 
 -- ============================================================
 UNCACHE TABLE silver_customer_enriched;
 DROP TABLE IF EXISTS gold.temp_cdf_staging; 

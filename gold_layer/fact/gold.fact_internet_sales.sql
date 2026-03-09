@@ -185,5 +185,5 @@ WHEN NOT MATCHED THEN INSERT (
 UNCACHE TABLE fact_internet_sales_staging;
 DROP TABLE IF EXISTS gold.temp_fact_cdf_staging;
 
--- Optimisation (ZORDER sur les clés les plus requêtées)
+-- Optimisation (via ZORDER)
 OPTIMIZE gold.fact_internet_sales ZORDER BY (CustomerKey, ProductKey);
