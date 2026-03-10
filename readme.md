@@ -95,7 +95,7 @@ The final data product is an interactive dashboard built in **Amazon QuickSight*
 
 ### InternetSales Performance Dashboard
 *Focus: Monthly revenue trends, gross margin tracking, tax calculations, and territorial performance.*
-![QuickSight Dashboard](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Dashboard-%20Quick%20Sight/Dashboard_High-level%20Summary%20(2013).pdf)
+![QuickSight Dashboard](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Dashboard-%20Quick%20Sight/Dashboard_High-level%20Summary%20(2013).jpg)
 
 <a name="install"></a>
 ## 💻 How to Run
