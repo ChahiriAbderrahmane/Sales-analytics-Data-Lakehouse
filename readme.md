@@ -83,7 +83,7 @@ The data flows through a strict Medallion architecture, ensuring data quality an
 **The Problem:** Keeping a 4-node EC2 cluster running 24/7 just to serve a dashboard via Spark Thrift Server is highly inefficient and expensive.
 **The Solution:** Separation of Storage and Compute.
 
-![FinOps Transition](assets/finops_transition_flow.png)
+![FinOps Transition](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Data_model/snowflake_data_model.png)
 
 I exported the `gold.agg_monthly_sales` table from local HDFS to an **Amazon S3** bucket in Parquet format. I then cataloged this S3 data using **Amazon Athena**. 
 * **Impact:** The EC2 cluster can be safely terminated after the ETL job completes. BI users query the data using Athena's serverless SQL engine, meaning we **only pay for queries executed**, reducing infrastructure costs by +80%.
