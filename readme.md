@@ -18,7 +18,7 @@
 <br>
 
 # **Project Architecture**
-![Project Architecture](assets/Hybrid_Data_Lakehouse_Architecture.png)
+![Project Architecture](Hybrid Data Lakehouse Architecture Diagram.png)
 
 <br>
 
