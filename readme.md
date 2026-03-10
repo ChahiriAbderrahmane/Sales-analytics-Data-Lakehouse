@@ -1,6 +1,3 @@
-
-
-html
 <div align="center">
   <h1>🚵‍♂️ AdventureWorks Hybrid Data Lakehouse</h1>
   <h3>On-Premise Cluster to Cloud-Native BI | FinOps & Medallion Architecture</h3>
