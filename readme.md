@@ -18,7 +18,7 @@
 <br>
 
 # **Project Architecture**
-![Project Architecture](Hybrid_Data_Lakehouse_Architecture_Diagram.png)
+![Project Architecture](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Hybrid%20Data%20Lakehouse%20Architecture%20Diagram.png)
 
 <br>
 
