@@ -1,8 +1,6 @@
-Voici le README adapté avec la même structure visuelle, le même niveau de détail et le même professionnalisme que ton modèle d'origine. J'ai calqué l'esthétique (badges, HTML centré, sommaire cliquable) tout en y injectant l'ingénierie spécifique de ton Data Lakehouse Hybride (Hadoop, Spark, Delta Lake, FinOps).
 
----
 
-```html
+html
 <div align="center">
   <h1>🚵‍♂️ AdventureWorks Hybrid Data Lakehouse</h1>
   <h3>On-Premise Cluster to Cloud-Native BI | FinOps & Medallion Architecture</h3>
@@ -113,33 +111,33 @@ The final data product is an interactive dashboard built in **Amazon QuickSight*
 ### Steps
 
 1. **Clone the repository**
-   ```bash
+   bash
    git clone [https://github.com/ChahiriAbderrahmane/adventureworks-hybrid-lakehouse.git](https://github.com/ChahiriAbderrahmane/adventureworks-hybrid-lakehouse.git)
 
-```
 
-2. **Ingest Data via Sqoop (Run on Master Node)** ```bash
+
+2. **Ingest Data via Sqoop (Run on Master Node)** bash
 bash scripts/ingest_adventureworks_sqoop.sh
-```
 
 
-```
+
+
 
 
 3. **Execute the Spark ETL Pipeline**
-```bash
+bash
 spark-submit --packages io.delta:delta-core_2.12:2.4.0 \
   --class com.adventureworks.lakehouse.Main \
   target/lakehouse-etl-1.0.jar
 
-```
+
 
 
 4. **Export Gold Data to S3**
-```bash
+bash
 aws s3 cp hdfs:///user/hive/warehouse/gold.db/monthly_sales s3://my-adventureworks-bucket/gold/monthly_sales/ --recursive
 
-```
+
 
 
 5. **Serve via Athena**
@@ -156,5 +154,5 @@ Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console
 Made with ❤️ by <a href="https://www.linkedin.com/in/abderrahmane-chahiri-151b26237/">Abderrahmane Chahiri</a>
 </div>
 
-```
+
 
