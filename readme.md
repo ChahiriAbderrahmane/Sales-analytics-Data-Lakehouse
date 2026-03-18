@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Infrastructure-AWS%20EC2-FF9900?style=for-the-badge&logo=amazon-aws" />
   <img src="https://img.shields.io/badge/Ingestion-Apache%20Sqoop-FFA500?style=for-the-badge&logo=apache" />
   <img src="https://img.shields.io/badge/Storage-HDFS%20%7C%20S3-66CC00?style=for-the-badge&logo=apache-hadoop" />
-  <img src="https://img.shields.io/badge/Warehouse-Apache%20Hive-FDEE21?style=for-the-badge&logo=apache-hive&logoColor=black" />
+  <img src="https://img.shields.io/badge/MetaStore-Apache%20Hive-FDEE21?style=for-the-badge&logo=apache-hive&logoColor=black" />
   <img src="https://img.shields.io/badge/Processing-Apache%20Spark-E25A1C?style=for-the-badge&logo=apache-spark" />
   <img src="https://img.shields.io/badge/Format-Delta%20Lake-43CBFF?style=for-the-badge&logo=databricks" />
   <img src="https://img.shields.io/badge/Serverless-AWS%20Athena-FF4F8B?style=for-the-badge&logo=amazon-aws" />
