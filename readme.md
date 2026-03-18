@@ -28,7 +28,7 @@
 1. [Project Overview](#overview)
 2. [Infrastructure & Cluster Setup](#infrastructure)
 3. [Data Architecture & Modeling](#architecture)
-4. [ETL Pipeline (Medallion)](#etl)
+4. [ELT Pipeline (Medallion)](#etl)
 5. [Cloud Native & FinOps Optimization](#finops)
 6. [Business Intelligence (QuickSight)](#bi)
 7. [Installation & Deployment](#install)
@@ -50,10 +50,10 @@ This project simulates a real-world enterprise data migration and modernization 
 <a name="infrastructure"></a>
 ## 🖥️ Infrastructure & Cluster Setup (IaaS)
 
-I provisioned and configured a distributed Big Data cluster from scratch using 4 **AWS EC2 instances (`t3.medium`)**, demonstrating strong Linux administration and networking capabilities.
+I provisioned and configured a distributed Big Data cluster from scratch using 4 **AWS EC2 instances (`t3.medium`)**.
 
 * **Machine 1 (Source & Metastore):** Hosts the source SQL Server database (AdventureWorks2022) and a PostgreSQL database acting as the Hive Metastore.
-* **Machine 2 (Master Node):** The brain of the cluster (Hadoop NameNode, Spark Master, Hive, Sqoop).
+* **Machine 2 (Master Node):** The brain of the cluster (Hadoop NameNode, Hadoop SecNameNode, Spark Master, Hive, Sqoop).
 * **Machines 3 & 4 (Worker Nodes):** The processing muscle (Hadoop DataNodes, Spark Workers).
 
 <a name="architecture"></a>
@@ -62,15 +62,15 @@ I provisioned and configured a distributed Big Data cluster from scratch using 4
 The project focuses on the **InternetSales** business process. The data undergoes rigorous transformation to ensure analytical performance and historical tracking.
 
 ### The Snowflake Schema & SCD Type 2
-I designed a highly normalized Snowflake schema for the Data Warehouse layer. To maintain historical accuracy of business entities (like product price changes or customer addresses), I implemented **SCD Type 2** in the Silver layer.
+I designed a normalized Snowflake schema for the Data Warehouse layer. To maintain historical accuracy of business entities (like product price changes or customer addresses), I implemented **SCD Type 2** in the Silver layer.
 
 <div align="center">
   <img src="https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Data_model/snowflake_data_model.png" alt="Snowflake Schema" width="800">
   <p><em>Snowflake Schema illustrating the InternetSales dimensions and facts.</em></p>
 </div>
 
-<a name="etl"></a>
-## 🌪️ ETL Pipeline (Medallion Architecture)
+<a name="elt"></a>
+## 🌪️ ELT Pipeline (Medallion Architecture)
 
 The data flows through a strict Medallion architecture, ensuring data quality and ACID compliance using **Delta Lake**.
 
@@ -85,10 +85,8 @@ The data flows through a strict Medallion architecture, ensuring data quality an
 **The Problem:** Keeping a 4-node EC2 cluster running 24/7 just to serve a dashboard via Spark Thrift Server is highly inefficient and expensive.
 **The Solution:** Separation of Storage and Compute.
 
-![FinOps Transition](assets/finops_transition_flow.png)
-
 I exported the `gold.agg_monthly_sales` table from local HDFS to an **Amazon S3** bucket in Parquet format. I then cataloged this S3 data using **Amazon Athena**. 
-* **Impact:** The EC2 cluster can be safely terminated after the ETL job completes. BI users query the data using Athena's serverless SQL engine, meaning we **only pay for queries executed**, reducing infrastructure costs by +80%.
+* **Impact:** The EC2 cluster can be safely terminated after the ELT job completes. BI users query the data using Athena's serverless SQL engine, meaning we **only pay for queries executed**, reducing infrastructure costs by +80%.
 
 <a name="bi"></a>
 ## 📊 Business Intelligence (Amazon QuickSight)
@@ -99,7 +97,7 @@ The final data product is an interactive dashboard built in **Amazon QuickSight*
 *Focus: Monthly revenue trends, gross margin tracking, tax calculations, and territorial performance.*
 ![QuickSight Dashboard](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Dashboard-%20Quick%20Sight/Dashboard_High-level%20Summary%20(2013).jpg)
 
-<a name="install"></a>
+<!-- <a name="install"></a>
 ## 💻 How to Run
 
 ### Prerequisites
@@ -142,15 +140,15 @@ aws s3 cp hdfs:///user/hive/warehouse/gold.db/monthly_sales s3://my-adventurewor
 5. **Serve via Athena**
 Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console to register the external table.
 
-<a name="contact"></a>
+<a name="contact"></a> -->
 
 ## 📨 Contact Me
 
-[LinkedIn](https://www.linkedin.com/in/abderrahmane-chahiri-151b26237/) •
+[LinkedIn](https://www.linkedin.com/in/chahiri-abderrahmane/) •
 [Gmail](mailto:chahiri.abderrahmane.eng@gmail.com)
 
 <div align="center">
-Made with ❤️ by <a href="https://www.linkedin.com/in/abderrahmane-chahiri-151b26237/">Abderrahmane Chahiri</a>
+Made with ❤️ by <a href="https://www.linkedin.com/in/chahiri-abderrahmane/">Abderrahmane Chahiri</a>
 </div>
 
 
