@@ -147,12 +147,12 @@ Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console
 
 | **1. Compute & Cluster** | **2. Storage Layer** |
 | :---: | :---: |
-| ![Cluster Instance](./Implementation Gallery/cluster_instances_ec2.png) | ![S3 Bucket](./Implementation Gallery/s3_bucket.png) |
-| *EC2 t3.medium instances running the Hadoop/Spark cluster.* | *S3 Buckets organized by Bronze, Silver, and Gold layers.* |
+| ![Cluster Instance](./Implementation%20Gallery/cluster_instances_ec2.png) | ![S3 Bucket](./Implementation%20Gallery/s3_bucket.png) |
+| *EC2 t3.medium instances running the Hadoop/Spark/Hive cluster.* | *S3 Buckets organized by Bronze, Silver, and Gold layers.* |
 
 | **3. Serverless Querying (Athena)** | **4. Data Visualization (QuickSight)** |
 | :---: | :---: |
-| ![Athena](./Implementation Gallery/athena_query.png) | ![QuickSight](./Implementation Gallery/quickSight_analyses.png) |
+| ![Athena](./Implementation%20Gallery/athena_query.png) | ![QuickSight](./Implementation%20Gallery/quickSight_analyses.png) |
 | *SQL Validation of the Gold aggregates via Amazon Athena.* | *Final business dashboard showing sales performance.* |
 
 <a name="contact"></a>
