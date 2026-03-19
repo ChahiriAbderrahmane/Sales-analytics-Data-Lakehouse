@@ -148,7 +148,7 @@ Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console
 | **1. Compute & Cluster** | **2. Storage Layer** |
 | :---: | :---: |
 | ![Cluster Instance](./Implementation%20Gallery/cluster_instances_ec2.png) | ![S3 Bucket](./Implementation%20Gallery/s3_bucket.png) |
-| *EC2 t3.medium instances running the Hadoop/Spark/Hive cluster.* | *S3 Buckets organized by Bronze, Silver, and Gold layers.* |
+| *EC2 t3.medium instances running the Hadoop/Spark/Hive cluster.* | *S3 Bucket.* |
 
 | **3. Serverless Querying (Athena)** | **4. Data Visualization (QuickSight)** |
 | :---: | :---: |
