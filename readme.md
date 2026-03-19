@@ -20,7 +20,7 @@
 <br>
 
 # **Project Architecture**
-![Project Architecture](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Hybrid%20Data%20Lakehouse%20Architecture%20Diagram.png)
+![Project Architecture](https://github.com/ChahiriAbderrahmane/Sales-analytics-platform/blob/master/Hybrid%20Data%20Lakehouse%20Architecture%20Diagram.gif)
 
 <br>
 
@@ -31,7 +31,6 @@
 4. [ELT Pipeline (Medallion)](#etl)
 5. [Cloud Native & FinOps Optimization](#finops)
 6. [Business Intelligence (QuickSight)](#bi)
-7. [Installation & Deployment](#install)
 8. [Contact](#contact)
 
 <hr>

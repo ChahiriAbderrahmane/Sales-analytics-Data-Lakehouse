@@ -1,0 +1,1 @@
+SELECT * FROM gold_serving.agg_monthly_sales;
