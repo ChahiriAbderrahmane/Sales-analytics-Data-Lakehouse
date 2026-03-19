@@ -141,7 +141,7 @@ aws s3 cp hdfs:///user/hive/warehouse/gold.db/monthly_sales s3://my-adventurewor
 Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console to register the external table.
  -->
 
-<a name="Implementation Gallery"></a>
+<a name="screens"></a>
 ## 📸 Implementation Gallery
 > **Proof of Concept:** The following captures demonstrate the actual deployment and orchestration of the infrastructure on AWS.
 
