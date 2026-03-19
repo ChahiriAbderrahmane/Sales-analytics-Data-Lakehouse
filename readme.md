@@ -31,6 +31,7 @@
 4. [ELT Pipeline (Medallion)](#etl)
 5. [Cloud Native & FinOps Optimization](#finops)
 6. [Business Intelligence (QuickSight)](#bi)
+7. [Implementation Gallery](#screens)
 8. [Contact](#contact)
 
 <hr>
@@ -138,9 +139,23 @@ aws s3 cp hdfs:///user/hive/warehouse/gold.db/monthly_sales s3://my-adventurewor
 
 5. **Serve via Athena**
 Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console to register the external table.
+ -->
 
-<a name="contact"></a> -->
+<a name="Implementation Gallery"></a>
+## 📸 Implementation Gallery
+> **Proof of Concept:** The following captures demonstrate the actual deployment and orchestration of the infrastructure on AWS.
 
+| **1. Compute & Cluster** | **2. Storage Layer** |
+| :---: | :---: |
+| ![Cluster Instance](./screens/cluster_instances_ec2.png) | ![S3 Bucket](./screens/s3_bucket.png) |
+| *EC2 t3.medium instances running the Hadoop/Spark cluster.* | *S3 Buckets organized by Bronze, Silver, and Gold layers.* |
+
+| **3. Serverless Querying (Athena)** | **4. Data Visualization (QuickSight)** |
+| :---: | :---: |
+| ![Athena](./screens/athena_query.png) | ![QuickSight](./screens/quickSight_analyses.png) |
+| *SQL Validation of the Gold aggregates via Amazon Athena.* | *Final business dashboard showing sales performance.* |
+
+<a name="contact"></a>
 ## 📨 Contact Me
 
 [LinkedIn](https://www.linkedin.com/in/chahiri-abderrahmane/) •
@@ -149,6 +164,3 @@ Execute the DDL script found in `sql/athena_setup.sql` in the AWS Athena console
 <div align="center">
 Made with ❤️ by <a href="https://www.linkedin.com/in/chahiri-abderrahmane/">Abderrahmane Chahiri</a>
 </div>
-
-
-
